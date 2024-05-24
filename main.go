@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
+	"os"
 	"time"
 
-	"github.com/nsf/termbox-go"
+	"github.com/gdamore/tcell/v2"
 )
 
 const (
@@ -18,147 +18,155 @@ type point struct {
 	x, y int
 }
 
-type snake struct {
+type Snake struct {
 	body      []point
-	direction termbox.Key
+	direction tcell.Key
 	alive     bool
 }
 
 var (
-	food     point
-	score    int
-	gameOver bool
+	food       point
+	score      int
+	gameOver   bool
+	gameScreen tcell.Screen
+	snakeStyle tcell.Style
 )
 
 func main() {
-	err := termbox.Init()
+	screen, err := tcell.NewScreen()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("Failed to create the screen")
+
+		os.Exit(1)
 	}
-	defer termbox.Close()
 
-	termbox.SetInputMode(termbox.InputEsc | termbox.InputMouse)
+	err = screen.Init()
+	if err != nil {
+		fmt.Printf("Failed to init the screen")
 
-	snake := snake{
+		os.Exit(1)
+	}
+
+	gameScreen = screen
+	gameScreen.HideCursor()
+	gameScreen.SetStyle(tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorWhite))
+	snakeStyle = tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorWhite)
+	gameScreen.Clear()
+
+	snake := Snake{
 		body:      []point{{5, 5}, {4, 5}, {3, 5}},
-		direction: termbox.KeyArrowRight,
+		direction: tcell.KeyRight,
 		alive:     true,
 	}
 
 	placeFood()
 
-	gameLoop(&snake)
+	ge := make(chan gameEvent)
 
-	// if !gameOver {
-	// 	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
-	// 	termbox.SetCell(width/2-5, height/2, 'G', termbox.ColorRed, termbox.ColorDefault)
-	// 	// message := "You have lost"
-	// 	//
-	// 	// for i, ch := range message {
-	// 	// 	termbox.SetCell(i+1, 5, ch, termbox.ColorGreen, termbox.ColorDefault)
-	// 	// }
-	// 	termbox.Flush()
-	// 	time.Sleep(time.Second * 2)
-	// }
+	go gameLoop(ge)
+
+	displayLoop(&snake, ge)
 }
 
-func gameLoop(s *snake) {
-	ticker := time.Tick(100 * time.Millisecond)
+func gameLoop(gEvent chan<- gameEvent) {
+	for {
+		ev := gameScreen.PollEvent()
+		switch tev := ev.(type) {
+		case *tcell.EventKey:
+			handleGameEvent(tev, gEvent)
+		}
+	}
+}
+
+type gameEvent struct {
+	Exit            bool
+	ChangeDirection tcell.Key
+}
+
+func handleGameEvent(ev *tcell.EventKey, gEvent chan<- gameEvent) {
+	switch ev.Key() {
+	case tcell.KeyDown:
+		fallthrough
+	case 107:
+		gEvent <- gameEvent{Exit: false, ChangeDirection: tcell.KeyDown}
+	case tcell.KeyUp:
+		fallthrough
+	case 106:
+		gEvent <- gameEvent{Exit: false, ChangeDirection: tcell.KeyUp}
+	case tcell.KeyLeft:
+		fallthrough
+	case 108:
+		gEvent <- gameEvent{Exit: false, ChangeDirection: tcell.KeyLeft}
+	case tcell.KeyRight:
+		fallthrough
+	case 104:
+		gEvent <- gameEvent{Exit: false, ChangeDirection: tcell.KeyRight}
+	case tcell.KeyEnter:
+		fallthrough
+	case tcell.KeyEscape:
+		gEvent <- gameEvent{true, tcell.KeyDown}
+	}
+}
+
+func displayLoop(snake *Snake, gEvent <-chan gameEvent) {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
 
 	for {
+		draw(snake)
+
 		select {
-		case ev := <-eventQueue():
-			if s.alive {
-				handleEventWhenAlive(ev, s)
-			} else {
-				handleEventWhenDead(ev, s)
-			}
-		case <-ticker:
-			if gameOver {
+		case ev := <-gEvent:
+			if ev.Exit {
 				return
 			}
-			update(s)
-			draw(s)
+
+			changeDirection(snake, ev.ChangeDirection)
+		case <-ticker.C:
+			update(snake)
 		}
 	}
 }
 
-func eventQueue() <-chan termbox.Event {
-	ch := make(chan termbox.Event)
-	go func() {
-		for {
-			ch <- termbox.PollEvent()
+func changeDirection(snake *Snake, newDirection tcell.Key) {
+	switch newDirection {
+	case tcell.KeyLeft:
+		if snake.direction == tcell.KeyUp || snake.direction == tcell.KeyDown {
+			snake.direction = newDirection
 		}
-	}()
-
-	return ch
-}
-
-func handleEventWhenAlive(ev termbox.Event, s *snake) {
-	if ev.Type == termbox.EventKey && ev.Ch == 0 {
-		// termbox.SetCell(1, height+4, rune(ev.Key), termbox.ColorGreen, termbox.ColorDefault)
-		switch ev.Key {
-		case termbox.KeyArrowUp:
-			fallthrough
-		case 107:
-			if s.direction != termbox.KeyArrowDown {
-				s.direction = ev.Key
-			}
-		case termbox.KeyArrowDown:
-			fallthrough
-		case 106:
-			if s.direction != termbox.KeyArrowUp {
-				s.direction = ev.Key
-			}
-		case termbox.KeyArrowLeft:
-			fallthrough
-		case 108:
-			if s.direction != termbox.KeyArrowRight {
-				s.direction = ev.Key
-			}
-		case termbox.KeyArrowRight:
-			fallthrough
-		case 104:
-			if s.direction != termbox.KeyArrowLeft {
-				s.direction = ev.Key
-				// fmt.Printf("%d", ev.Key)
-			}
+	case tcell.KeyRight:
+		if snake.direction == tcell.KeyUp || snake.direction == tcell.KeyDown {
+			snake.direction = newDirection
+		}
+	case tcell.KeyUp:
+		if snake.direction == tcell.KeyLeft || snake.direction == tcell.KeyRight {
+			snake.direction = newDirection
+		}
+	case tcell.KeyDown:
+		if snake.direction == tcell.KeyLeft || snake.direction == tcell.KeyRight {
+			snake.direction = newDirection
 		}
 	}
 }
 
-func handleEventWhenDead(ev termbox.Event, s *snake) {
-	if ev.Type == termbox.EventKey && ev.Ch == 0 {
-		switch ev.Key {
-		case termbox.KeyEnter:
-			fallthrough
-		case termbox.KeyEsc:
-			if !s.alive {
-				gameOver = true
-				return
-			}
-		}
-	}
-}
-
-func update(s *snake) {
+func update(s *Snake) {
 	head := s.body[0]
 	var newHead point
 
 	switch s.direction {
-	case termbox.KeyArrowUp:
+	case tcell.KeyUp:
 		fallthrough
 	case 107:
 		newHead = point{head.x, head.y - 1}
-	case termbox.KeyArrowDown:
+	case tcell.KeyDown:
 		fallthrough
 	case 106:
 		newHead = point{head.x, head.y + 1}
-	case termbox.KeyArrowLeft:
+	case tcell.KeyLeft:
 		fallthrough
 	case 108:
 		newHead = point{head.x - 1, head.y}
-	case termbox.KeyArrowRight:
+	case tcell.KeyRight:
 		fallthrough
 	case 104:
 		newHead = point{head.x + 1, head.y}
@@ -188,8 +196,8 @@ func update(s *snake) {
 	s.body = append([]point{newHead}, s.body...)
 }
 
-func draw(s *snake) {
-	termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+func draw(s *Snake) {
+	gameScreen.Clear()
 
 	// Draw snake
 	for i, p := range s.body {
@@ -200,16 +208,16 @@ func draw(s *snake) {
 			char = '#' // Body
 		}
 
-		termbox.SetCell(p.x, p.y, char, termbox.ColorGreen, termbox.ColorDefault)
+		gameScreen.SetContent(p.x, p.y, rune(char), nil, snakeStyle)
 	}
 
 	// Draw food
-	termbox.SetCell(food.x, food.y, '$', termbox.ColorYellow, termbox.ColorDefault)
+	gameScreen.SetContent(food.x, food.y, '$', nil, snakeStyle)
 
 	// Draw score
 	scoreStr := fmt.Sprintf("Score: %d", score)
-	for i, ch := range scoreStr {
-		termbox.SetCell(i, height+5, ch, termbox.ColorWhite, termbox.ColorDefault)
+	for i, char := range scoreStr {
+		gameScreen.SetContent(i, height+5, rune(char), nil, snakeStyle)
 	}
 
 	drawTopBorder()
@@ -220,50 +228,50 @@ func draw(s *snake) {
 	if !s.alive {
 		message := "You have lost"
 
-		for i, ch := range message {
-			termbox.SetCell(i+1, 5, ch, termbox.ColorGreen, termbox.ColorDefault)
+		for i, char := range message {
+			gameScreen.SetContent(i, height+5, rune(char), nil, snakeStyle)
 		}
 	}
-	termbox.Flush()
+
+	gameScreen.Show()
 }
 
 func drawLeftBorder() {
 	for y := 1; y < height-1; y += 1 {
-		termbox.SetCell(0, y, '|', termbox.ColorWhite, termbox.ColorDefault)
+		gameScreen.SetContent(0, y, '|', nil, snakeStyle)
 	}
 }
 
 func drawRightBorder() {
 	for y := 1; y < height-1; y += 1 {
-		termbox.SetCell(width, y, '|', termbox.ColorWhite, termbox.ColorDefault)
+		gameScreen.SetContent(width, y, '|', nil, snakeStyle)
 	}
 }
 
 func drawTopBorder() {
 	// Top-Left corner
-	termbox.SetCell(0, 0, '/', termbox.ColorWhite, termbox.ColorDefault)
+	gameScreen.SetContent(0, 0, '/', nil, snakeStyle)
 
 	for x := 1; x < width; x += 1 {
-		termbox.SetCell(x, 0, '–', termbox.ColorWhite, termbox.ColorDefault)
+		gameScreen.SetContent(x, 0, '-', nil, snakeStyle)
 	}
 
 	// Top-Right corner
-	termbox.SetCell(width, 0, '\\', termbox.ColorWhite, termbox.ColorDefault)
+	gameScreen.SetContent(width, 0, '\\', nil, snakeStyle)
 }
 
 func drawBottomBorder() {
 	// Bottom-Left corner
-	termbox.SetCell(0, height-1, '\\', termbox.ColorWhite, termbox.ColorDefault)
+	gameScreen.SetContent(0, height-1, '\\', nil, snakeStyle)
 
 	for x := 1; x < width; x += 1 {
-		termbox.SetCell(x, height-1, '–', termbox.ColorWhite, termbox.ColorDefault)
+		gameScreen.SetContent(x, height-1, '-', nil, snakeStyle)
 	}
 
 	// Bottom-Right corner
-	termbox.SetCell(width, height-1, '/', termbox.ColorWhite, termbox.ColorDefault)
+	gameScreen.SetContent(width, height-1, '/', nil, snakeStyle)
 }
 
 func placeFood() {
-	// rand.Seed(time.Now().UnixNano())
 	food = point{1 + rand.Intn(width-2), 1 + rand.Intn(height-2)}
 }
