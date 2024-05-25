@@ -18,10 +18,19 @@ type Snake struct {
 	alive     bool
 }
 
+type GameStatus int16
+
+const (
+	Started GameStatus = iota
+	MovementChanged
+	Running
+	End
+)
+
 type Game struct {
 	food       point
 	score      int
-	gameOver   bool
+	status     GameStatus
 	Screen     *tcell.Screen
 	event      Event
 	snake      Snake
@@ -53,6 +62,7 @@ func (game *Game) Init(screen *tcell.Screen) {
 	}
 
 	game.placeFood()
+	game.status = Started
 }
 
 func (game *Game) StartGame() {
@@ -61,6 +71,7 @@ func (game *Game) StartGame() {
 
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
+	defer (*game.Screen).Fini()
 
 	for {
 		select {
@@ -85,12 +96,16 @@ func (game *Game) inputLoop(gEvent chan<- Event) {
 		ev := (*game.Screen).PollEvent()
 		switch tev := ev.(type) {
 		case *tcell.EventKey:
-			handleInputEvent(tev, gEvent)
+			game.handleInputEvent(tev, gEvent)
 		}
 	}
 }
 
-func handleInputEvent(ev *tcell.EventKey, gEvent chan<- Event) {
+func (game *Game) handleInputEvent(ev *tcell.EventKey, gEvent chan<- Event) {
+	if game.status == MovementChanged {
+		return
+	}
+
 	switch ev.Key() {
 	case tcell.KeyDown:
 		fallthrough
@@ -116,7 +131,7 @@ func handleInputEvent(ev *tcell.EventKey, gEvent chan<- Event) {
 }
 
 func (game *Game) changeDirection(newDirection tcell.Key) {
-	if !game.snake.alive {
+	if game.status == MovementChanged || game.status == End {
 		return
 	}
 
@@ -124,18 +139,22 @@ func (game *Game) changeDirection(newDirection tcell.Key) {
 	case tcell.KeyLeft:
 		if game.snake.direction == tcell.KeyUp || game.snake.direction == tcell.KeyDown {
 			game.snake.direction = newDirection
+			game.status = MovementChanged
 		}
 	case tcell.KeyRight:
 		if game.snake.direction == tcell.KeyUp || game.snake.direction == tcell.KeyDown {
 			game.snake.direction = newDirection
+			game.status = MovementChanged
 		}
 	case tcell.KeyUp:
 		if game.snake.direction == tcell.KeyLeft || game.snake.direction == tcell.KeyRight {
 			game.snake.direction = newDirection
+			game.status = MovementChanged
 		}
 	case tcell.KeyDown:
 		if game.snake.direction == tcell.KeyLeft || game.snake.direction == tcell.KeyRight {
 			game.snake.direction = newDirection
+			game.status = MovementChanged
 		}
 	}
 }
@@ -166,12 +185,14 @@ func (game *Game) update() {
 	// Check if the snake collides with the walls or itself
 	if newHead.x <= 0 || newHead.x >= width || newHead.y <= 0 || newHead.y >= height-1 {
 		game.snake.alive = false
+		game.status = End
 		return
 	}
 
 	for _, p := range game.snake.body[1:] {
 		if newHead == p {
 			game.snake.alive = false
+			game.status = End
 			return
 		}
 	}
@@ -185,6 +206,8 @@ func (game *Game) update() {
 	}
 
 	game.snake.body = append([]point{newHead}, game.snake.body...)
+
+	game.status = Running
 }
 
 func (game *Game) draw() {
