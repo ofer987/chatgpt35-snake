@@ -1,4 +1,4 @@
-module ofer987/snake
+module github.com/ofer987/snake
 
 go 1.22.3
 

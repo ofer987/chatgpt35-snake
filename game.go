@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/ofer987/snake/models"
 )
 
 type GameStatus uint16
@@ -18,12 +19,12 @@ const (
 
 type Game struct {
 	blockedCells [][]bool
-	food         point
+	food         models.Point
 	score        int
 	status       GameStatus
 	Screen       *tcell.Screen
 	event        Event
-	snake        Snake
+	snake        models.Snake
 	borderStyle  tcell.Style
 	snakeStyle   tcell.Style
 	headStyle    tcell.Style
@@ -53,7 +54,7 @@ func (game *Game) Init(screen *tcell.Screen) {
 
 	game.Screen = screen
 
-	game.snake = CreateSnake()
+	game.snake = models.CreateSnake()
 
 	game.blockedCells = make([][]bool, height)
 
@@ -100,7 +101,7 @@ func (game *Game) inputLoop(gEvent chan<- Event) {
 }
 
 func (game *Game) handleInputEvent(ev *tcell.EventKey, gEvent chan<- Event) {
-	if game.snake.movement == Changed {
+	if game.snake.GetMovement() == models.Changed {
 		return
 	}
 
@@ -148,37 +149,37 @@ func (game *Game) changeDirection(newDirection tcell.Key) {
 func (game *Game) update() {
 	game.snake.ResetMovement()
 
-	head := game.snake.body[0]
-	var newHead point
+	head := game.snake.Body[0]
+	var newHead models.Point
 
-	switch game.snake.direction {
-	case Up:
+	switch game.snake.GetDirection() {
+	case models.Up:
 		fallthrough
 	case 107:
-		newHead = point{head.x, head.y - 1}
-	case Down:
+		newHead = models.Point{X: head.X, Y: head.Y - 1}
+	case models.Down:
 		fallthrough
 	case 106:
-		newHead = point{head.x, head.y + 1}
-	case Left:
+		newHead = models.Point{X: head.X, Y: head.Y + 1}
+	case models.Left:
 		fallthrough
 	case 108:
-		newHead = point{head.x - 1, head.y}
-	case Right:
+		newHead = models.Point{X: head.X - 1, Y: head.Y}
+	case models.Right:
 		fallthrough
 	case 104:
-		newHead = point{head.x + 1, head.y}
+		newHead = models.Point{X: head.X + 1, Y: head.Y}
 	}
 
 	// Check if the snake collides with the walls or itself
-	if newHead.x <= 0 || newHead.x >= width || newHead.y <= 0 || newHead.y >= height-1 {
+	if newHead.X <= 0 || newHead.X >= width || newHead.Y <= 0 || newHead.Y >= height-1 {
 		game.snake.KillIt()
 		game.status = Failed
 
 		return
 	}
 
-	for _, p := range game.snake.body[1:] {
+	for _, p := range game.snake.Body[1:] {
 		if newHead == p {
 			game.snake.KillIt()
 			game.status = Failed
@@ -192,10 +193,10 @@ func (game *Game) update() {
 		game.score++
 		game.placeFood()
 	} else {
-		game.snake.body = game.snake.body[:len(game.snake.body)-1]
+		game.snake.Body = game.snake.Body[:len(game.snake.Body)-1]
 	}
 
-	game.snake.body = append([]point{newHead}, game.snake.body...)
+	game.snake.Body = append([]models.Point{newHead}, game.snake.Body...)
 
 	// game.status =
 }
@@ -205,21 +206,21 @@ func (game *Game) draw() {
 	(*game.Screen).Clear()
 
 	// Draw snake
-	for i, p := range game.snake.body {
+	for i, p := range game.snake.Body {
 		char := ' '
 		if i == 0 {
 			char = '@' // Head
 
-			game.setCell(p.x, p.y, rune(char), game.headStyle)
+			game.setCell(p.X, p.Y, rune(char), game.headStyle)
 		} else {
 			char = '#' // Body
 
-			game.setCell(p.x, p.y, rune(char), game.bodyStyle)
+			game.setCell(p.X, p.Y, rune(char), game.bodyStyle)
 		}
 	}
 
 	// Draw food
-	game.setCell(game.food.x, game.food.y, '$', game.foodStyle)
+	game.setCell(game.food.X, game.food.Y, '$', game.foodStyle)
 
 	// Draw score
 	scoreStr := fmt.Sprintf("Score: %d", game.score)
@@ -232,7 +233,7 @@ func (game *Game) draw() {
 	game.drawLeftBorder()
 	game.drawRightBorder()
 
-	if !game.snake.alive {
+	if !game.snake.IsAlive() {
 		message := "You have lost"
 		for i, char := range message {
 			game.setCell(i, height+2, rune(char), game.snakeStyle)
@@ -284,7 +285,7 @@ func (game *Game) placeFood() {
 		y := 1 + rand.Intn(height-2)
 
 		if game.blockedCells[x][y] == false {
-			game.food = point{x, y}
+			game.food = models.Point{X: x, Y: y}
 
 			break
 		}

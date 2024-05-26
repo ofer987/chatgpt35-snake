@@ -1,7 +1,7 @@
-package main
+package models
 
 type Snake struct {
-	body      []point
+	Body      []Point
 	direction Direction
 	alive     bool
 	movement  Movement
@@ -25,7 +25,7 @@ const (
 
 func CreateSnake() Snake {
 	snake := Snake{
-		body:      []point{{5, 5}, {4, 5}, {3, 5}},
+		Body:      []Point{{5, 5}, {4, 5}, {3, 5}},
 		direction: Right,
 		alive:     true,
 	}
@@ -35,6 +35,10 @@ func CreateSnake() Snake {
 
 func (snake *Snake) GetMovement() Movement {
 	return snake.movement
+}
+
+func (snake *Snake) GetDirection() Direction {
+	return snake.direction
 }
 
 func (snake *Snake) IsAlive() bool {
