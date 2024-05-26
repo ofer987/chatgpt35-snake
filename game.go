@@ -105,26 +105,32 @@ func (game *Game) handleInputEvent(ev *tcell.EventKey, gEvent chan<- Event) {
 		return
 	}
 
+	game.score = int(ev.Rune())
 	switch ev.Key() {
 	case tcell.KeyDown:
-		fallthrough
-	case 107:
 		gEvent <- MovementEvent{tcell.KeyDown}
 	case tcell.KeyUp:
-		fallthrough
-	case 106:
 		gEvent <- MovementEvent{ChangeDirection: tcell.KeyUp}
 	case tcell.KeyLeft:
-		fallthrough
-	case 108:
 		gEvent <- MovementEvent{ChangeDirection: tcell.KeyLeft}
 	case tcell.KeyRight:
-		fallthrough
-	case 104:
 		gEvent <- MovementEvent{ChangeDirection: tcell.KeyRight}
 	case tcell.KeyEnter:
 		fallthrough
 	case tcell.KeyEscape:
+		gEvent <- StateEvent{true}
+	}
+
+	switch ev.Rune() {
+	case 106:
+		gEvent <- MovementEvent{tcell.KeyDown}
+	case 107:
+		gEvent <- MovementEvent{tcell.KeyUp}
+	case 104:
+		gEvent <- MovementEvent{tcell.KeyLeft}
+	case 108:
+		gEvent <- MovementEvent{tcell.KeyRight}
+	case 113:
 		gEvent <- StateEvent{true}
 	}
 }
