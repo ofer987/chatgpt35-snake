@@ -205,21 +205,21 @@ func (game *Game) draw() {
 		if i == 0 {
 			char = '@' // Head
 
-			(*game.Screen).SetContent(p.x, p.y, rune(char), nil, game.headStyle)
+			game.setCell(p.x, p.y, rune(char), game.headStyle)
 		} else {
 			char = '#' // Body
 
-			(*game.Screen).SetContent(p.x, p.y, rune(char), nil, game.bodyStyle)
+			game.setCell(p.x, p.y, rune(char), game.bodyStyle)
 		}
 	}
 
 	// Draw food
-	(*game.Screen).SetContent(game.food.x, game.food.y, '$', nil, game.foodStyle)
+	game.setCell(game.food.x, game.food.y, '$', game.foodStyle)
 
 	// Draw score
 	scoreStr := fmt.Sprintf("Score: %d", game.score)
 	for i, char := range scoreStr {
-		(*game.Screen).SetContent(i, height+1, rune(char), nil, game.textStyle)
+		game.setCell(i, height+1, rune(char), game.foodStyle)
 	}
 
 	game.drawTopBorder()
@@ -229,9 +229,8 @@ func (game *Game) draw() {
 
 	if !game.snake.alive {
 		message := "You have lost"
-		// (*game.Screen).SetContent(10, height+5, rune('k'), nil, game.snakeStyle)
 		for i, char := range message {
-			(*game.Screen).SetContent(i, height+2, rune(char), nil, game.snakeStyle)
+			game.setCell(i, height+2, rune(char), game.snakeStyle)
 		}
 	}
 
@@ -240,40 +239,45 @@ func (game *Game) draw() {
 
 func (game *Game) drawLeftBorder() {
 	for y := 1; y < height-1; y += 1 {
-		(*game.Screen).SetContent(0, y, '|', nil, game.borderStyle)
+		game.setCell(0, y, '|', game.borderStyle)
 	}
 }
 
 func (game *Game) drawRightBorder() {
 	for y := 1; y < height-1; y += 1 {
-		(*game.Screen).SetContent(width, y, '|', nil, game.borderStyle)
+		game.setCell(width, y, '|', game.borderStyle)
 	}
 }
 
 func (game *Game) drawTopBorder() {
 	// Top-Left corner
-	(*game.Screen).SetContent(0, 0, '/', nil, game.borderStyle)
+	game.setCell(0, 0, '/', game.borderStyle)
 
 	for x := 1; x < width; x += 1 {
-		(*game.Screen).SetContent(x, 0, '-', nil, game.borderStyle)
+		game.setCell(x, 0, '–', game.borderStyle)
 	}
 
 	// Top-Right corner
-	(*game.Screen).SetContent(width, 0, '\\', nil, game.borderStyle)
+	game.setCell(width, 0, '\\', game.borderStyle)
 }
 
 func (game *Game) drawBottomBorder() {
 	// Bottom-Left corner
-	(*game.Screen).SetContent(0, height-1, '\\', nil, game.borderStyle)
+	game.setCell(0, height-1, '\\', game.borderStyle)
 
 	for x := 1; x < width; x += 1 {
-		(*game.Screen).SetContent(x, height-1, '-', nil, game.borderStyle)
+		game.setCell(x, height-1, '–', game.borderStyle)
 	}
 
 	// Bottom-Right corner
-	(*game.Screen).SetContent(width, height-1, '/', nil, game.borderStyle)
+	game.setCell(width, height-1, '/', game.borderStyle)
 }
 
 func (game *Game) placeFood() {
 	game.food = point{1 + rand.Intn(width-2), 1 + rand.Intn(height-2)}
+}
+
+func (game *Game) setCell(x int, y int, primary rune, style tcell.Style) {
+
+	(*game.Screen).SetContent(x, y, primary, nil, style)
 }
