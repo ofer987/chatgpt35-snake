@@ -99,11 +99,6 @@ func (game *Game) inputLoop(gEvent chan<- Event) {
 }
 
 func (game *Game) handleInputEvent(ev *tcell.EventKey, gEvent chan<- Event) {
-	if game.snake.GetMovement() == models.Changed {
-		return
-	}
-
-	game.score = int(ev.Rune())
 	switch ev.Key() {
 	case tcell.KeyDown:
 		gEvent <- MovementEvent{tcell.KeyDown}
@@ -201,8 +196,6 @@ func (game *Game) update() {
 	}
 
 	game.snake.Body = append([]models.Point{newHead}, game.snake.Body...)
-
-	// game.status =
 }
 
 func (game *Game) draw() {
