@@ -68,6 +68,8 @@ func (snake *Snake) MoveUp() {
 	case Left:
 		snake.direction = Up
 	}
+
+	snake.movement = Changed
 }
 
 func (snake *Snake) MoveRight() {
@@ -85,6 +87,8 @@ func (snake *Snake) MoveRight() {
 	case Left:
 		break
 	}
+
+	snake.movement = Changed
 }
 
 func (snake *Snake) MoveDown() {
@@ -102,6 +106,8 @@ func (snake *Snake) MoveDown() {
 	case Left:
 		snake.direction = Down
 	}
+
+	snake.movement = Changed
 }
 
 func (snake *Snake) MoveLeft() {
@@ -119,4 +125,6 @@ func (snake *Snake) MoveLeft() {
 	case Left:
 		break
 	}
+
+	snake.movement = Changed
 }
