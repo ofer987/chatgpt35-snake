@@ -17,18 +17,19 @@ const (
 )
 
 type Game struct {
-	food        point
-	score       int
-	status      GameStatus
-	Screen      *tcell.Screen
-	event       Event
-	snake       Snake
-	borderStyle tcell.Style
-	snakeStyle  tcell.Style
-	headStyle   tcell.Style
-	bodyStyle   tcell.Style
-	foodStyle   tcell.Style
-	textStyle   tcell.Style
+	blockedCells [][]bool
+	food         point
+	score        int
+	status       GameStatus
+	Screen       *tcell.Screen
+	event        Event
+	snake        Snake
+	borderStyle  tcell.Style
+	snakeStyle   tcell.Style
+	headStyle    tcell.Style
+	bodyStyle    tcell.Style
+	foodStyle    tcell.Style
+	textStyle    tcell.Style
 }
 
 type Event interface {
@@ -54,6 +55,9 @@ func (game *Game) Init(screen *tcell.Screen) {
 
 	game.snake = CreateSnake()
 
+	game.blockedCells = make([][]bool, height)
+
+	game.resetBlockedCells()
 	game.placeFood()
 }
 
@@ -197,6 +201,7 @@ func (game *Game) update() {
 }
 
 func (game *Game) draw() {
+	game.resetBlockedCells()
 	(*game.Screen).Clear()
 
 	// Draw snake
@@ -278,6 +283,15 @@ func (game *Game) placeFood() {
 }
 
 func (game *Game) setCell(x int, y int, primary rune, style tcell.Style) {
+	game.blockedCells[x][y] = true
 
 	(*game.Screen).SetContent(x, y, primary, nil, style)
+}
+
+func (game *Game) resetBlockedCells() {
+	game.blockedCells = make([][]bool, width+1)
+
+	for i := range width + 1 {
+		game.blockedCells[i] = make([]bool, height+3)
+	}
 }
