@@ -308,8 +308,10 @@ func (game *Game) setCell(x int, y int, primary rune, style tcell.Style) {
 }
 
 func (game *Game) resetBlockedCells() {
+	// Border
 	game.blockedCells = make([][]bool, width+1)
 
+	// Extra information at the bottom of the screen
 	for i := range width + 1 {
 		game.blockedCells[i] = make([]bool, height+3)
 	}
