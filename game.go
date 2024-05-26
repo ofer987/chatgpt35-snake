@@ -148,19 +148,19 @@ func (game *Game) update() {
 	var newHead point
 
 	switch game.snake.direction {
-	case tcell.KeyUp:
+	case Up:
 		fallthrough
 	case 107:
 		newHead = point{head.x, head.y - 1}
-	case tcell.KeyDown:
+	case Down:
 		fallthrough
 	case 106:
 		newHead = point{head.x, head.y + 1}
-	case tcell.KeyLeft:
+	case Left:
 		fallthrough
 	case 108:
 		newHead = point{head.x - 1, head.y}
-	case tcell.KeyRight:
+	case Right:
 		fallthrough
 	case 104:
 		newHead = point{head.x + 1, head.y}

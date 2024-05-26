@@ -1,15 +1,20 @@
 package main
 
-import (
-	"github.com/gdamore/tcell/v2"
-)
-
 type Snake struct {
 	body      []point
-	direction tcell.Key
+	direction Direction
 	alive     bool
 	movement  Movement
 }
+
+type Direction uint8
+
+const (
+	Up Direction = iota
+	Right
+	Down
+	Left
+)
 
 type Movement uint16
 
@@ -21,7 +26,7 @@ const (
 func CreateSnake() Snake {
 	snake := Snake{
 		body:      []point{{5, 5}, {4, 5}, {3, 5}},
-		direction: tcell.KeyRight,
+		direction: Right,
 		alive:     true,
 	}
 
@@ -50,14 +55,14 @@ func (snake *Snake) MoveUp() {
 	}
 
 	switch snake.direction {
-	case tcell.KeyUp:
+	case Up:
 		break
-	case tcell.KeyRight:
-		snake.direction = tcell.KeyUp
-	case tcell.KeyDown:
+	case Right:
+		snake.direction = Up
+	case Down:
 		break
-	case tcell.KeyLeft:
-		snake.direction = tcell.KeyUp
+	case Left:
+		snake.direction = Up
 	}
 }
 
@@ -67,13 +72,13 @@ func (snake *Snake) MoveRight() {
 	}
 
 	switch snake.direction {
-	case tcell.KeyUp:
-		snake.direction = tcell.KeyRight
-	case tcell.KeyRight:
+	case Up:
+		snake.direction = Right
+	case Right:
 		break
-	case tcell.KeyDown:
-		snake.direction = tcell.KeyRight
-	case tcell.KeyLeft:
+	case Down:
+		snake.direction = Right
+	case Left:
 		break
 	}
 }
@@ -84,14 +89,14 @@ func (snake *Snake) MoveDown() {
 	}
 
 	switch snake.direction {
-	case tcell.KeyUp:
+	case Up:
 		break
-	case tcell.KeyRight:
-		snake.direction = tcell.KeyDown
-	case tcell.KeyDown:
+	case Right:
+		snake.direction = Down
+	case Down:
 		break
-	case tcell.KeyLeft:
-		snake.direction = tcell.KeyDown
+	case Left:
+		snake.direction = Down
 	}
 }
 
@@ -101,13 +106,13 @@ func (snake *Snake) MoveLeft() {
 	}
 
 	switch snake.direction {
-	case tcell.KeyUp:
-		snake.direction = tcell.KeyLeft
-	case tcell.KeyRight:
+	case Up:
+		snake.direction = Left
+	case Right:
 		break
-	case tcell.KeyDown:
-		snake.direction = tcell.KeyLeft
-	case tcell.KeyLeft:
+	case Down:
+		snake.direction = Left
+	case Left:
 		break
 	}
 }
