@@ -279,7 +279,16 @@ func (game *Game) drawBottomBorder() {
 }
 
 func (game *Game) placeFood() {
-	game.food = point{1 + rand.Intn(width-2), 1 + rand.Intn(height-2)}
+	for {
+		x := 1 + rand.Intn(width-2)
+		y := 1 + rand.Intn(height-2)
+
+		if game.blockedCells[x][y] == false {
+			game.food = point{x, y}
+
+			break
+		}
+	}
 }
 
 func (game *Game) setCell(x int, y int, primary rune, style tcell.Style) {
