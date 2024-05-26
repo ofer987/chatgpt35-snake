@@ -28,14 +28,18 @@ const (
 )
 
 type Game struct {
-	food       point
-	score      int
-	status     GameStatus
-	Screen     *tcell.Screen
-	event      Event
-	snake      Snake
-	gameStyle  tcell.Style
-	snakeStyle tcell.Style
+	food        point
+	score       int
+	status      GameStatus
+	Screen      *tcell.Screen
+	event       Event
+	snake       Snake
+	borderStyle tcell.Style
+	snakeStyle  tcell.Style
+	headStyle   tcell.Style
+	bodyStyle   tcell.Style
+	foodStyle   tcell.Style
+	textStyle   tcell.Style
 }
 
 type Event interface {
@@ -50,8 +54,12 @@ type MovementEvent struct {
 }
 
 func (game *Game) Init(screen *tcell.Screen) {
-	game.gameStyle = tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorWhite)
+	game.borderStyle = tcell.StyleDefault.Background(tcell.ColorWhite).Foreground(tcell.ColorBlack)
 	game.snakeStyle = tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorWhite)
+	game.headStyle = tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorBlueViolet)
+	game.bodyStyle = tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorBlue)
+	game.foodStyle = tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorGreen)
+	game.textStyle = tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorWhite)
 
 	game.Screen = screen
 
@@ -218,20 +226,22 @@ func (game *Game) draw() {
 		char := ' '
 		if i == 0 {
 			char = '@' // Head
+
+			(*game.Screen).SetContent(p.x, p.y, rune(char), nil, game.headStyle)
 		} else {
 			char = '#' // Body
-		}
 
-		(*game.Screen).SetContent(p.x, p.y, rune(char), nil, game.snakeStyle)
+			(*game.Screen).SetContent(p.x, p.y, rune(char), nil, game.bodyStyle)
+		}
 	}
 
 	// Draw food
-	(*game.Screen).SetContent(game.food.x, game.food.y, '$', nil, game.snakeStyle)
+	(*game.Screen).SetContent(game.food.x, game.food.y, '$', nil, game.foodStyle)
 
 	// Draw score
 	scoreStr := fmt.Sprintf("Score: %d", game.score)
 	for i, char := range scoreStr {
-		(*game.Screen).SetContent(i, height+1, rune(char), nil, game.snakeStyle)
+		(*game.Screen).SetContent(i, height+1, rune(char), nil, game.textStyle)
 	}
 
 	game.drawTopBorder()
@@ -252,38 +262,38 @@ func (game *Game) draw() {
 
 func (game *Game) drawLeftBorder() {
 	for y := 1; y < height-1; y += 1 {
-		(*game.Screen).SetContent(0, y, '|', nil, game.snakeStyle)
+		(*game.Screen).SetContent(0, y, '|', nil, game.borderStyle)
 	}
 }
 
 func (game *Game) drawRightBorder() {
 	for y := 1; y < height-1; y += 1 {
-		(*game.Screen).SetContent(width, y, '|', nil, game.snakeStyle)
+		(*game.Screen).SetContent(width, y, '|', nil, game.borderStyle)
 	}
 }
 
 func (game *Game) drawTopBorder() {
 	// Top-Left corner
-	(*game.Screen).SetContent(0, 0, '/', nil, game.snakeStyle)
+	(*game.Screen).SetContent(0, 0, '/', nil, game.borderStyle)
 
 	for x := 1; x < width; x += 1 {
-		(*game.Screen).SetContent(x, 0, '-', nil, game.snakeStyle)
+		(*game.Screen).SetContent(x, 0, '-', nil, game.borderStyle)
 	}
 
 	// Top-Right corner
-	(*game.Screen).SetContent(width, 0, '\\', nil, game.snakeStyle)
+	(*game.Screen).SetContent(width, 0, '\\', nil, game.borderStyle)
 }
 
 func (game *Game) drawBottomBorder() {
 	// Bottom-Left corner
-	(*game.Screen).SetContent(0, height-1, '\\', nil, game.snakeStyle)
+	(*game.Screen).SetContent(0, height-1, '\\', nil, game.borderStyle)
 
 	for x := 1; x < width; x += 1 {
-		(*game.Screen).SetContent(x, height-1, '-', nil, game.snakeStyle)
+		(*game.Screen).SetContent(x, height-1, '-', nil, game.borderStyle)
 	}
 
 	// Bottom-Right corner
-	(*game.Screen).SetContent(width, height-1, '/', nil, game.snakeStyle)
+	(*game.Screen).SetContent(width, height-1, '/', nil, game.borderStyle)
 }
 
 func (game *Game) placeFood() {
