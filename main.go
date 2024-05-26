@@ -7,6 +7,10 @@ import (
 	"github.com/gdamore/tcell/v2"
 )
 
+type point struct {
+	x, y int
+}
+
 const (
 	width  = 30
 	height = 20
