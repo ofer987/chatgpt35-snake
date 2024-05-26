@@ -56,8 +56,6 @@ func (game *Game) Init(screen *tcell.Screen) {
 
 	game.snake = models.CreateSnake()
 
-	game.blockedCells = make([][]bool, height)
-
 	game.resetBlockedCells()
 	game.placeFood()
 }
@@ -286,16 +284,28 @@ func (game *Game) drawBottomBorder() {
 }
 
 func (game *Game) placeFood() {
-	for {
-		x := 1 + rand.Intn(width-2)
-		y := 1 + rand.Intn(height-2)
-
-		if game.blockedCells[x][y] == false {
-			game.food = models.Point{X: x, Y: y}
-
-			break
+	availableCellsCount := 0
+	for x := range width {
+		for y := range height {
+			if !game.blockedCells[x][y] {
+				availableCellsCount += 1
+			}
 		}
 	}
+
+	availablePoints := make([]models.Point, availableCellsCount)
+	i := 0
+	for x := range width {
+		for y := range height {
+			if !game.blockedCells[x][y] {
+				availablePoints[i] = models.Point{X: x, Y: y}
+				i += 1
+			}
+		}
+	}
+
+	randomAvailablePointIndex := rand.Intn(availableCellsCount)
+	game.food = availablePoints[randomAvailablePointIndex]
 }
 
 func (game *Game) setCell(x int, y int, primary rune, style tcell.Style) {
