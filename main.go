@@ -13,15 +13,16 @@ const (
 )
 
 func main() {
-	screen, err := tcell.NewScreen()
-	if err != nil {
-		fmt.Printf("Failed to create the screen")
+	var screen tcell.Screen
+	var err error
+
+	if screen, err = tcell.NewScreen(); err != nil {
+		fmt.Printf("Failed to ,create the screen")
 
 		os.Exit(1)
 	}
 
-	err = screen.Init()
-	if err != nil {
+	if err = screen.Init(); err != nil {
 		fmt.Printf("Failed to init the screen")
 
 		os.Exit(1)
