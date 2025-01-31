@@ -13,6 +13,7 @@ type GameStatus uint16
 
 const (
 	Started GameStatus = iota
+	Paused
 	Success
 	Failed
 )
@@ -38,6 +39,10 @@ type Event interface {
 
 type StateEvent struct {
 	Exit bool
+}
+
+type PauseEvent struct {
+	toggle bool
 }
 
 type MovementEvent struct {
@@ -78,12 +83,20 @@ func (game *Game) StartGame() {
 				if tev.Exit {
 					return
 				}
+			case PauseEvent:
+				if tev.toggle && game.status == Started {
+					game.status = Paused
+				} else if tev.toggle && game.status == Paused {
+					game.status = Started
+				}
 			case MovementEvent:
 				game.changeDirection(tev.ChangeDirection)
 			}
 		case <-ticker.C:
-			game.update()
-			game.draw()
+			if game.status == Started {
+				game.update()
+				game.draw()
+			}
 		}
 	}
 }
@@ -123,6 +136,8 @@ func (game *Game) handleInputEvent(ev *tcell.EventKey, gEvent chan<- Event) {
 		gEvent <- MovementEvent{tcell.KeyLeft}
 	case 108:
 		gEvent <- MovementEvent{tcell.KeyRight}
+	case 112:
+		gEvent <- PauseEvent{true}
 	case 113:
 		gEvent <- StateEvent{true}
 	}
